@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { panzoom } from '$lib/panzoom'
 
-	const image = new Image()
-	const promise = new Promise<void>(resolve => {
-		image.onload = () => resolve()
+	const promise = new Promise<HTMLImageElement>(resolve => {
+		const image = new Image()
+		image.onload = () => resolve(image)
 		image.src = '/Dragon-Clan.jpg?'
 	})
 </script>
 
-{#await promise then}
+{#await promise then image}
 	<canvas use:panzoom={image} />
 {/await}
 
