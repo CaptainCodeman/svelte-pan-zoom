@@ -17,15 +17,22 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
 
   const gap = 20 * dpr
   const max_scale = 50 * dpr
-  let min_scale = Math.min(
-    canvas.width / (image.width + gap),
-    canvas.height / (image.height + gap)
-  )
+  let min_scale: number
 
-  // transform so that 0, 0 is center of image in center of canvas
-  ctx.translate(canvas.width / 2, canvas.height / 2)
-  ctx.scale(min_scale, min_scale)
-  ctx.translate(-image.width / 2, -image.height / 2)
+  function initialize(image: HTMLImageElement) {
+    min_scale = Math.min(
+      canvas.width / (image.width + gap),
+      canvas.height / (image.height + gap)
+    )
+
+    // transform so that 0, 0 is center of image in center of canvas
+    ctx.resetTransform()
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+    ctx.scale(min_scale, min_scale)
+    ctx.translate(-image.width / 2, -image.height / 2)
+  }
+
+  initialize(image)
 
   // handle canvas size changing
   const resize_observer = new ResizeObserver(nodes => {
@@ -215,11 +222,13 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     const x = event.offsetX * dpr
     const y = event.offsetY * dpr
 
+    // point is in canvas space
     return { x, y }
   }
 
   function toImageSpace(point: Point): Point {
     const inverse = ctx.getTransform().invertSelf()
+
     const x = inverse.a * point.x + inverse.c * point.y + inverse.e
     const y = inverse.b * point.x + inverse.d * point.y + inverse.f
 
@@ -242,6 +251,9 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   canvas.addEventListener('wheel', onwheel)
 
   return {
+    update(image: HTMLImageElement) {
+      initialize(image)
+    },
     destroy() {
       resize_observer.unobserve(canvas)
 
