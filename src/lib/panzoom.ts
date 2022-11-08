@@ -1,12 +1,7 @@
 // basic 2d geometry
-interface Point {
-  x: number
-  y: number
-}
-
-const distance = (p1: Point, p2: Point) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2))
-const midpoint = (p1: Point, p2: Point) => <Point>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-const subtract = (p1: Point, p2: Point) => <Point>{ x: p1.x - p2.x, y: p1.y - p2.y }
+const distance = (p1: DOMPoint, p2: DOMPoint) => Math.hypot(p1.x - p2.x, p1.y - p2.y)
+const midpoint = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+const subtract = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: p1.x - p2.x, y: p1.y - p2.y }
 
 export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   const dpr = window.devicePixelRatio
@@ -38,7 +33,7 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   const resize_observer = new ResizeObserver(nodes => {
     const rect = nodes[0].contentRect
 
-    const prev = toImageSpace({ x: width / 2, y: height / 2 })
+    const prev = toImageSpace(new DOMPoint(width / 2, height / 2))
     const transform = ctx.getTransform()
 
     width = rect.width * dpr
@@ -55,7 +50,7 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     ctx.imageSmoothingEnabled = false
     ctx.setTransform(transform)
 
-    const middle = toImageSpace({ x: canvas.width / 2, y: canvas.height / 2 })
+    const middle = toImageSpace(new DOMPoint(canvas.width / 2, canvas.height / 2))
     ctx.translate(middle.x - prev.x, middle.y - prev.y)
 
     // forces zoom checks and render
@@ -65,7 +60,7 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   resize_observer.observe(canvas)
 
   // active pointer count and positions
-  const pointers = new Map<number, Point>()
+  const pointers = new Map<number, DOMPoint>()
 
   function onpointerdown(event: PointerEvent) {
     event.stopPropagation()
@@ -129,51 +124,49 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
         zoomOn(middle, zoom)
 
         // for debugging touch positions on mobile
-        /*
         // get transform to use new zoom value to adjust sizes of indicators
-        const matrix = ctx.getTransform()
+        // const matrix = ctx.getTransform()
 
-        ctx.save()
-        ctx.strokeStyle = '#f00'
-        ctx.lineWidth = 64 / matrix.a
-        ctx.lineJoin = 'round'
-        ctx.lineCap = 'round'
-        ctx.beginPath()
-        ctx.lineTo(p1.x, p1.y)
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
+        // ctx.save()
+        // ctx.beginPath()
+        // ctx.strokeStyle = '#f00'
+        // ctx.lineWidth = 128 / matrix.a
+        // ctx.lineJoin = 'round'
+        // ctx.lineCap = 'round'
+        // ctx.lineTo(p1.x, p1.y)
+        // ctx.stroke()
+        // ctx.closePath()
+        // ctx.restore()
 
-        ctx.save()
-        ctx.strokeStyle = '#00f'
-        ctx.lineWidth = 64 / matrix.a
-        ctx.lineJoin = 'round'
-        ctx.lineCap = 'round'
-        ctx.beginPath()
-        ctx.lineTo(p2.x, p2.y)
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
+        // ctx.save()
+        // ctx.beginPath()
+        // ctx.strokeStyle = '#00f'
+        // ctx.lineWidth = 128 / matrix.a
+        // ctx.lineJoin = 'round'
+        // ctx.lineCap = 'round'
+        // ctx.lineTo(p2.x, p2.y)
+        // ctx.stroke()
+        // ctx.closePath()
+        // ctx.restore()
 
-        const radius = distance(points[0], points[1]) / 2
+        // const radius = distance(points[0], points[1]) / 2
 
-        ctx.save()
-        ctx.lineJoin = 'round'
-        ctx.lineCap = 'round'
-        ctx.beginPath()
-        ctx.strokeStyle = '#0f0'
-        ctx.lineWidth = 36 / matrix.a
-        ctx.lineTo(middle.x, middle.y)
-        ctx.stroke()
-        ctx.closePath()
-        ctx.beginPath()
-        ctx.strokeStyle = '#ff0'
-        ctx.lineWidth = 8 / matrix.a
-        ctx.arc(middle.x, middle.y, radius / matrix.a, 0, Math.PI * 2)
-        ctx.stroke()
-        ctx.closePath()
-        ctx.restore()
-        */
+        // ctx.save()
+        // ctx.beginPath()
+        // ctx.lineJoin = 'round'
+        // ctx.lineCap = 'round'
+        // ctx.strokeStyle = '#0f0'
+        // ctx.lineWidth = 36 / matrix.a
+        // ctx.lineTo(middle.x, middle.y)
+        // ctx.stroke()
+        // ctx.closePath()
+        // ctx.beginPath()
+        // ctx.strokeStyle = '#ff0'
+        // ctx.lineWidth = 8 / matrix.a
+        // ctx.arc(middle.x, middle.y, radius / matrix.a, 0, Math.PI * 2)
+        // ctx.stroke()
+        // ctx.closePath()
+        // ctx.restore()
 
         break
       }
@@ -190,11 +183,11 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     zoomOn(toImageSpace(point), z)
   }
 
-  function moveBy(delta: Point) {
+  function moveBy(delta: DOMPoint) {
     ctx.translate(delta.x, delta.y)
   }
 
-  function zoomOn(point: Point, zoom: number) {
+  function zoomOn(point: DOMPoint, zoom: number) {
     ctx.translate(point.x, point.y)
     ctx.scale(zoom, zoom)
     ctx.translate(-point.x, -point.y)
@@ -218,21 +211,17 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     render()
   }
 
-  function pointFromEvent(event: PointerEvent | WheelEvent): Point {
+  function pointFromEvent(event: PointerEvent | WheelEvent): DOMPoint {
     const x = event.offsetX * dpr
     const y = event.offsetY * dpr
 
     // point is in canvas space
-    return { x, y }
+    return new DOMPoint(x, y)
   }
 
-  function toImageSpace(point: Point): Point {
-    const inverse = ctx.getTransform().invertSelf()
-
-    const x = inverse.a * point.x + inverse.c * point.y + inverse.e
-    const y = inverse.b * point.x + inverse.d * point.y + inverse.f
-
-    return { x, y }
+  function toImageSpace(point: DOMPoint): DOMPoint {
+    const inverse = ctx.getTransform().inverse()
+    return inverse.transformPoint(point)
   }
 
   function render() {
@@ -244,11 +233,17 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     ctx.drawImage(image, 0, 0)
   }
 
+  function ignoreEvent(event: Event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   canvas.addEventListener('pointerdown', onpointerdown, { passive: true })
   canvas.addEventListener('pointerup', onpointerend, { passive: true })
   canvas.addEventListener('pointercancel', onpointerend, { passive: true })
   canvas.addEventListener('pointermove', onpointermove, { passive: true })
   canvas.addEventListener('wheel', onwheel)
+  canvas.addEventListener('contextmenu', ignoreEvent)
 
   return {
     update(image: HTMLImageElement) {
@@ -262,6 +257,7 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
       canvas.removeEventListener('pointercancel', onpointerend)
       canvas.removeEventListener('pointermove', onpointermove)
       canvas.removeEventListener('wheel', onwheel)
+      canvas.removeEventListener('contextmenu', ignoreEvent)
     }
   }
 }

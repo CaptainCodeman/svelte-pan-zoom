@@ -22,6 +22,8 @@
 		margin: 0;
 		padding: 0;
 		user-select: none;
+		-webkit-user-select: none; /* disable selection/Copy of UIWebView */
+		-webkit-touch-callout: none; /* disable the IOS popup when long-press on a link */
 	}
 
 	canvas {
