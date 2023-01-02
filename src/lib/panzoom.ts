@@ -112,17 +112,17 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       }
       // two pointer move (pinch zoom _and_ pan)
       case 2: {
-        const prev_points = [...pointers.values()]
-        const prev_p1 = toImageSpace(prev_points[0])
-        const prev_p2 = toImageSpace(prev_points[1])
-        const prev_middle = midpoint(prev_p1, prev_p2)
-        const prev_dist = distance(prev_p1, prev_p2)
+        let points = [...pointers.values()]
+        let p1 = toImageSpace(points[0])
+        let p2 = toImageSpace(points[1])
+        const prev_middle = midpoint(p1, p2)
+        const prev_dist = distance(p1, p2)
 
         pointers.set(event.pointerId, point)
 
-        const points = [...pointers.values()]
-        const p1 = toImageSpace(points[0])
-        const p2 = toImageSpace(points[1])
+        points = [...pointers.values()]
+        p1 = toImageSpace(points[0])
+        p2 = toImageSpace(points[1])
         const middle = midpoint(p1, p2)
         const dist = distance(p1, p2)
 
@@ -163,28 +163,23 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     scale(zoom)
 
     const transform = ctx.getTransform()
-    const min_scale = minZoom
-    const max_scale = maxZoom
 
     // limit min zoom to initial image size
-    if (transform.a < min_scale) {
-      scale(min_scale / transform.a)
+    if (transform.a < minZoom) {
+      scale(minZoom / transform.a)
     }
 
     // limit max zoom to "OMG, I see the pixels so large!"
-    if (transform.a > max_scale) {
-      scale(max_scale / transform.a)
+    if (transform.a > maxZoom) {
+      scale(maxZoom / transform.a)
     }
 
     rerender()
   }
 
   function pointFromEvent(event: PointerEvent | WheelEvent): DOMPoint {
-    const x = event.offsetX * dpr
-    const y = event.offsetY * dpr
-
     // point is in canvas space
-    return new DOMPoint(x, y)
+    return new DOMPoint(event.offsetX * dpr, event.offsetY * dpr)
   }
 
   function toImageSpace(point: DOMPoint): DOMPoint {
