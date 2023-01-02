@@ -11,7 +11,7 @@
 				height: image.height,
 				render,
 			})
-		image.src = './svelte-kit-machine.png'
+		image.src = './svelte-kit-machine.webp'
 
 		function render(ctx: CanvasRenderingContext2D) {
 			ctx.drawImage(image, 0, 0)
