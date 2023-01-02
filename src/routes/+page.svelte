@@ -34,6 +34,7 @@
 		position: absolute;
 		top: 16px;
 		left: 16px;
+		pointer-events: none;
 	}
 	canvas {
 		box-sizing: border-box;
