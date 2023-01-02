@@ -32,7 +32,8 @@
 	},
 	"scripts": {
 		"dev": "vite dev",
-		"build": "tsup",
+		"build": "vite build",
+		"package": "tsup",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
