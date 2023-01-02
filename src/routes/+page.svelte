@@ -36,7 +36,6 @@
 		left: 16px;
 	}
 	canvas {
-		position: absolute;
 		box-sizing: border-box;
 		width: 100%;
 		height: 100%;
