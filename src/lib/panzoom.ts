@@ -1,60 +1,71 @@
-// basic 2d geometry
+// some basic 2d geometry
 const distance = (p1: DOMPoint, p2: DOMPoint) => Math.hypot(p1.x - p2.x, p1.y - p2.y)
 const midpoint = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 const subtract = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: p1.x - p2.x, y: p1.y - p2.y }
 
-export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
+type Render = (ctx: CanvasRenderingContext2D) => void
+export interface Options {
+  width: number
+  height: number
+  render: Render
+  padding?: number
+  maxZoom?: number
+}
+
+export function panzoom(canvas: HTMLCanvasElement, options: Options) {
   const dpr = window.devicePixelRatio
   const ctx = canvas.getContext('2d')!
 
-  let width = canvas.width = canvas.clientWidth * dpr
-  let height = canvas.height = canvas.clientHeight * dpr
+  let minZoom: number
+  let width: number
+  let height: number
+  let render: Render
+  let padding: number
+  let maxZoom: number
+  let view_width = canvas.width = canvas.clientWidth * dpr
+  let view_height = canvas.height = canvas.clientHeight * dpr
 
-  const gap = 20 * dpr
-  const max_scale = 50 * dpr
-  let min_scale: number
+  function initialize(options: Options) {
+    ({ width, height, render, padding, maxZoom } = { padding: 0, maxZoom: 16, ...options })
 
-  function initialize(image: HTMLImageElement) {
-    min_scale = Math.min(
-      canvas.width / (image.width + gap),
-      canvas.height / (image.height + gap)
+    minZoom = Math.min(
+      canvas.width / (width + (padding * dpr)),
+      canvas.height / (height + (padding * dpr))
     )
 
     // transform so that 0, 0 is center of image in center of canvas
     ctx.resetTransform()
     ctx.translate(canvas.width / 2, canvas.height / 2)
-    ctx.scale(min_scale, min_scale)
-    ctx.translate(-image.width / 2, -image.height / 2)
+    ctx.scale(minZoom, minZoom)
+    ctx.translate(-width / 2, -height / 2)
   }
 
-  initialize(image)
+  initialize(options)
 
-  // handle canvas size changing
+  // handle canvas size changing, keep image centered
   const resize_observer = new ResizeObserver(nodes => {
     const rect = nodes[0].contentRect
 
-    const prev = toImageSpace(new DOMPoint(width / 2, height / 2))
+    const prev = toImageSpace(new DOMPoint(view_width / 2, view_height / 2))
     const transform = ctx.getTransform()
 
-    width = rect.width * dpr
-    height = rect.height * dpr
+    view_width = rect.width * dpr
+    view_height = rect.height * dpr
 
-    canvas.width = width
-    canvas.height = height
+    canvas.width = view_width
+    canvas.height = view_height
 
-    min_scale = Math.min(
-      canvas.width / (image.width + gap),
-      canvas.height / (image.height + gap)
+    minZoom = Math.min(
+      canvas.width / (options.width + (padding * dpr)),
+      canvas.height / (options.height + (padding * dpr))
     )
 
-    ctx.imageSmoothingEnabled = false
     ctx.setTransform(transform)
 
     const middle = toImageSpace(new DOMPoint(canvas.width / 2, canvas.height / 2))
     ctx.translate(middle.x - prev.x, middle.y - prev.y)
 
-    // forces zoom checks and render
-    zoomOn(middle, 1)
+    rerender()
   })
 
   resize_observer.observe(canvas)
@@ -75,7 +86,7 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     canvas.releasePointerCapture(event.pointerId)
 
     pointers.delete(event.pointerId)
-    // TODO: add momentum scrolling ?
+    // TODO: add momentum scrolling ...
   }
 
   function onpointermove(event: PointerEvent) {
@@ -93,13 +104,13 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
         const diff = subtract(toImageSpace(point), toImageSpace(prev))
 
         moveBy(diff)
-        render()
+        rerender()
 
         pointers.set(event.pointerId, point)
 
         break
       }
-      // two pointer move (pinch zoom)
+      // two pointer move (pinch zoom _and_ pan)
       case 2: {
         const prev_points = [...pointers.values()]
         const prev_p1 = toImageSpace(prev_points[0])
@@ -123,51 +134,6 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
         const zoom = dist / prev_dist
         zoomOn(middle, zoom)
 
-        // for debugging touch positions on mobile
-        // get transform to use new zoom value to adjust sizes of indicators
-        // const matrix = ctx.getTransform()
-
-        // ctx.save()
-        // ctx.beginPath()
-        // ctx.strokeStyle = '#f00'
-        // ctx.lineWidth = 128 / matrix.a
-        // ctx.lineJoin = 'round'
-        // ctx.lineCap = 'round'
-        // ctx.lineTo(p1.x, p1.y)
-        // ctx.stroke()
-        // ctx.closePath()
-        // ctx.restore()
-
-        // ctx.save()
-        // ctx.beginPath()
-        // ctx.strokeStyle = '#00f'
-        // ctx.lineWidth = 128 / matrix.a
-        // ctx.lineJoin = 'round'
-        // ctx.lineCap = 'round'
-        // ctx.lineTo(p2.x, p2.y)
-        // ctx.stroke()
-        // ctx.closePath()
-        // ctx.restore()
-
-        // const radius = distance(points[0], points[1]) / 2
-
-        // ctx.save()
-        // ctx.beginPath()
-        // ctx.lineJoin = 'round'
-        // ctx.lineCap = 'round'
-        // ctx.strokeStyle = '#0f0'
-        // ctx.lineWidth = 36 / matrix.a
-        // ctx.lineTo(middle.x, middle.y)
-        // ctx.stroke()
-        // ctx.closePath()
-        // ctx.beginPath()
-        // ctx.strokeStyle = '#ff0'
-        // ctx.lineWidth = 8 / matrix.a
-        // ctx.arc(middle.x, middle.y, radius / matrix.a, 0, Math.PI * 2)
-        // ctx.stroke()
-        // ctx.closePath()
-        // ctx.restore()
-
         break
       }
     }
@@ -188,27 +154,29 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   }
 
   function zoomOn(point: DOMPoint, zoom: number) {
-    ctx.translate(point.x, point.y)
-    ctx.scale(zoom, zoom)
-    ctx.translate(-point.x, -point.y)
+    function scale(value: number) {
+      ctx.translate(point.x, point.y)
+      ctx.scale(value, value)
+      ctx.translate(-point.x, -point.y)
+    }
+
+    scale(zoom)
 
     const transform = ctx.getTransform()
+    const min_scale = minZoom
+    const max_scale = maxZoom
 
     // limit min zoom to initial image size
     if (transform.a < min_scale) {
-      ctx.translate(point.x, point.y)
-      ctx.scale(min_scale / transform.a, min_scale / transform.a)
-      ctx.translate(-point.x, -point.y)
+      scale(min_scale / transform.a)
     }
 
     // limit max zoom to "OMG, I see the pixels so large!"
     if (transform.a > max_scale) {
-      ctx.translate(point.x, point.y)
-      ctx.scale(max_scale / transform.a, max_scale / transform.a)
-      ctx.translate(-point.x, -point.y)
+      scale(max_scale / transform.a)
     }
 
-    render()
+    rerender()
   }
 
   function pointFromEvent(event: PointerEvent | WheelEvent): DOMPoint {
@@ -224,18 +192,13 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
     return inverse.transformPoint(point)
   }
 
-  function render() {
+  function rerender() {
     ctx.save()
     ctx.resetTransform()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.restore()
 
-    ctx.drawImage(image, 0, 0)
-  }
-
-  function ignoreEvent(event: Event) {
-    event.preventDefault()
-    event.stopPropagation()
+    render(ctx)
   }
 
   canvas.addEventListener('pointerdown', onpointerdown, { passive: true })
@@ -243,11 +206,10 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
   canvas.addEventListener('pointercancel', onpointerend, { passive: true })
   canvas.addEventListener('pointermove', onpointermove, { passive: true })
   canvas.addEventListener('wheel', onwheel)
-  canvas.addEventListener('contextmenu', ignoreEvent)
 
   return {
-    update(image: HTMLImageElement) {
-      initialize(image)
+    update(options: Options) {
+      initialize(options)
     },
     destroy() {
       resize_observer.unobserve(canvas)
@@ -257,7 +219,6 @@ export function panzoom(canvas: HTMLCanvasElement, image: HTMLImageElement) {
       canvas.removeEventListener('pointercancel', onpointerend)
       canvas.removeEventListener('pointermove', onpointermove)
       canvas.removeEventListener('wheel', onwheel)
-      canvas.removeEventListener('contextmenu', ignoreEvent)
     }
   }
 }
