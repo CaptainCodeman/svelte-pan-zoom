@@ -1,9 +1,15 @@
+interface Point {
+  x: number
+  y: number
+}
+
 // some basic 2d geometry
-const distance = (p1: DOMPoint, p2: DOMPoint) => Math.hypot(p1.x - p2.x, p1.y - p2.y)
-const midpoint = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-const subtract = (p1: DOMPoint, p2: DOMPoint) => <DOMPoint>{ x: p1.x - p2.x, y: p1.y - p2.y }
+const distance = (p1: Point, p2: Point) => Math.hypot(p1.x - p2.x, p1.y - p2.y)
+const midpoint = (p1: Point, p2: Point) => <Point>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+const subtract = (p1: Point, p2: Point) => <Point>{ x: p1.x - p2.x, y: p1.y - p2.y }
 
 type Render = (ctx: CanvasRenderingContext2D) => void
+
 export interface Options {
   width: number
   height: number
@@ -12,7 +18,25 @@ export interface Options {
   maxZoom?: number
 }
 
+// defined outside of action, so we only create a single instance
+let resizeObserver: ResizeObserver
+
+// callback lookup is because the scope that the resize observer instance
+// is running in isn't always going to be the element that was resized
+type ResizeCallback = (entry: ResizeObserverEntry) => void
+const resizeCallbacks = new WeakMap<Element, ResizeCallback>()
+
 export function panzoom(canvas: HTMLCanvasElement, options: Options) {
+  // created inside of action, so we're SSR friendly
+  resizeObserver = resizeObserver || new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const callback = resizeCallbacks.get(entry.target)
+      if (callback) {
+        callback(entry)
+      }
+    }
+  })
+
   const dpr = window.devicePixelRatio
   const ctx = canvas.getContext('2d')!
 
@@ -38,15 +62,15 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     ctx.translate(canvas.width / 2, canvas.height / 2)
     ctx.scale(minZoom, minZoom)
     ctx.translate(-width / 2, -height / 2)
+
+    rerender()
   }
 
   initialize(options)
 
-  // handle canvas size changing, keep image centered
-  const resize_observer = new ResizeObserver(nodes => {
-    const rect = nodes[0].contentRect
-
-    const prev = toImageSpace(new DOMPoint(view_width / 2, view_height / 2))
+  resizeCallbacks.set(canvas, entry => {
+    const rect = entry.contentRect
+    const prev = toImageSpace({ x: view_width / 2, y: view_height / 2 })
     const transform = ctx.getTransform()
 
     view_width = rect.width * dpr
@@ -62,16 +86,16 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     ctx.setTransform(transform)
 
-    const middle = toImageSpace(new DOMPoint(canvas.width / 2, canvas.height / 2))
+    const middle = toImageSpace({ x: canvas.width / 2, y: canvas.height / 2 })
     ctx.translate(middle.x - prev.x, middle.y - prev.y)
 
     rerender()
   })
 
-  resize_observer.observe(canvas)
+  resizeObserver.observe(canvas)
 
   // active pointer count and positions
-  const pointers = new Map<number, DOMPoint>()
+  const pointers = new Map<number, Point>()
 
   function onpointerdown(event: PointerEvent) {
     event.stopPropagation()
@@ -149,11 +173,11 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     zoomOn(toImageSpace(point), z)
   }
 
-  function moveBy(delta: DOMPoint) {
+  function moveBy(delta: Point) {
     ctx.translate(delta.x, delta.y)
   }
 
-  function zoomOn(point: DOMPoint, zoom: number) {
+  function zoomOn(point: Point, zoom: number) {
     function scale(value: number) {
       ctx.translate(point.x, point.y)
       ctx.scale(value, value)
@@ -177,12 +201,12 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     rerender()
   }
 
-  function pointFromEvent(event: PointerEvent | WheelEvent): DOMPoint {
+  function pointFromEvent(event: PointerEvent | WheelEvent): Point {
     // point is in canvas space
-    return new DOMPoint(event.offsetX * dpr, event.offsetY * dpr)
+    return { x: event.offsetX * dpr, y: event.offsetY * dpr }
   }
 
-  function toImageSpace(point: DOMPoint): DOMPoint {
+  function toImageSpace(point: Point): Point {
     const inverse = ctx.getTransform().inverse()
     return inverse.transformPoint(point)
   }
@@ -207,7 +231,8 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       initialize(options)
     },
     destroy() {
-      resize_observer.unobserve(canvas)
+      resizeObserver.unobserve(canvas)
+      resizeCallbacks.delete(canvas)
 
       canvas.removeEventListener('pointerdown', onpointerdown)
       canvas.removeEventListener('pointerup', onpointerend)

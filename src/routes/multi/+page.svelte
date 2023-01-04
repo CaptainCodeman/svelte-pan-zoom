@@ -18,32 +18,28 @@
 	})
 </script>
 
-{#await promise then options}
-	<canvas use:panzoom={options} />
-{/await}
-
 <div>
-	<h1>Svelte Pan Zoom</h1>
-	<p>Use swipe & pinch touch gestures or mouse click+drag & wheel to pan and zoom image</p>
+	{#await promise then options}
+		<canvas style:width="60%" style:background-color="#ccc" use:panzoom={options} />
+		<canvas style:width="40%" style:background-color="#ddd" use:panzoom={options} />
+		<canvas style:width="40%" style:background-color="#eee" use:panzoom={options} />
+		<canvas style:width="60%" style:background-color="#fff" use:panzoom={options} />
+	{/await}
 </div>
 
 <style>
 	div {
-		font-family: Arial, Helvetica, sans-serif;
-		position: absolute;
-		top: 16px;
-		left: 16px;
-		pointer-events: none;
+		display: flex;
+		flex-wrap: wrap;
 	}
 	canvas {
 		box-sizing: border-box;
-		width: 100%;
-		height: 100%;
+		width: 480px;
+		height: 480px;
 		margin: 0;
 		padding: 0;
 		user-select: none;
 		touch-action: none;
-		background-color: #ccc;
 		overscroll-behavior: none;
 		-webkit-user-select: none; /* disable selection/Copy of UIWebView */
 		-webkit-touch-callout: none; /* disable the IOS popup when long-press on a link */

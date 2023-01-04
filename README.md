@@ -15,7 +15,7 @@ Import action into page, create options and pass to action.
 Options include:
 
 - `width` & `height` in CSS pixels of item to render (will be centered and sized to fit canvas)
-- `render` function to draw to canvas (you don't _have_ to draw an image)
+- `render` function to render to canvas (you don't _have_ to draw an image)
 - `padding` (optional, default 0)
 - `maxZoom` (optional, default 16)
 
