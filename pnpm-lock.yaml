@@ -5,10 +5,14 @@ specifiers:
   '@sveltejs/kit': 1.0.1
   svelte: ^3.55.0
   svelte-check: ^3.0.1
+  svelte-resize-observer-action: ^0.0.2
   tslib: ^2.4.1
   tsup: ^6.5.0
   typescript: ^4.9.4
   vite: ^4.0.3
+
+dependencies:
+  svelte-resize-observer-action: 0.0.2
 
 devDependencies:
   '@sveltejs/adapter-static': 1.0.0_@sveltejs+kit@1.0.1
@@ -1394,6 +1398,10 @@ packages:
       svelte: 3.55.0
       typescript: 4.9.4
     dev: true
+
+  /svelte-resize-observer-action/0.0.2:
+    resolution: {integrity: sha512-afcuz69CQxIOLEkUtNozfqcWyGH9DnuWJ5119zYtRAs59xgwBzo+0UDVBiY7i0JFVFj57KPiWPwprSG4o7yYEw==}
+    dev: false
 
   /svelte/3.55.0:
     resolution: {integrity: sha512-uGu2FVMlOuey4JoKHKrpZFkoYyj0VLjJdz47zX5+gVK5odxHM40RVhar9/iK2YFRVxvfg9FkhfVlR0sjeIrOiA==}

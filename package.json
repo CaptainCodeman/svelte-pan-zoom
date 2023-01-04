@@ -1,6 +1,6 @@
 {
 	"name": "svelte-pan-zoom",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"type": "module",
 	"keywords": [
 		"svelte",
@@ -38,23 +38,12 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
-	"tsup": {
-		"entry": [
-			"src/lib/index.ts"
-		],
-		"format": [
-			"esm"
-		],
-		"sourcemap": true,
-		"minify": true,
-		"clean": true,
-		"dts": true
-	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "1.0.0",
 		"@sveltejs/kit": "1.0.1",
 		"svelte": "^3.55.0",
 		"svelte-check": "^3.0.1",
+		"svelte-resize-observer-action": "^0.0.2",
 		"tslib": "^2.4.1",
 		"tsup": "^6.5.0",
 		"typescript": "^4.9.4",

@@ -1,3 +1,5 @@
+import { resize } from 'svelte-resize-observer-action'
+
 interface Point {
   x: number
   y: number
@@ -18,25 +20,7 @@ export interface Options {
   maxZoom?: number
 }
 
-// defined outside of action, so we only create a single instance
-let resizeObserver: ResizeObserver
-
-// callback lookup is because the scope that the resize observer instance
-// is running in isn't always going to be the element that was resized
-type ResizeCallback = (entry: ResizeObserverEntry) => void
-const resizeCallbacks = new WeakMap<Element, ResizeCallback>()
-
 export function panzoom(canvas: HTMLCanvasElement, options: Options) {
-  // created inside of action, so we're SSR friendly
-  resizeObserver = resizeObserver || new ResizeObserver(entries => {
-    for (const entry of entries) {
-      const callback = resizeCallbacks.get(entry.target)
-      if (callback) {
-        callback(entry)
-      }
-    }
-  })
-
   const dpr = window.devicePixelRatio
   const ctx = canvas.getContext('2d')!
 
@@ -68,7 +52,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
   initialize(options)
 
-  resizeCallbacks.set(canvas, entry => {
+  const resizeAction = resize(canvas, entry => {
     const rect = entry.contentRect
     const prev = toImageSpace({ x: view_width / 2, y: view_height / 2 })
     const transform = ctx.getTransform()
@@ -91,8 +75,6 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     rerender()
   })
-
-  resizeObserver.observe(canvas)
 
   // active pointer count and positions
   const pointers = new Map<number, Point>()
@@ -231,8 +213,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       initialize(options)
     },
     destroy() {
-      resizeObserver.unobserve(canvas)
-      resizeCallbacks.delete(canvas)
+      resizeAction.destroy()
 
       canvas.removeEventListener('pointerdown', onpointerdown)
       canvas.removeEventListener('pointerup', onpointerend)
