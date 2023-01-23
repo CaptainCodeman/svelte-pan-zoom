@@ -5,12 +5,28 @@ interface Point {
   y: number
 }
 
+interface TrackedPoint {
+  point: Point
+  t: number   // time
+}
+
+interface Velocity {
+  vx: number
+  vy: number
+  ts: number
+}
+
 // some basic 2d geometry
 const distance = (p1: Point, p2: Point) => Math.hypot(p1.x - p2.x, p1.y - p2.y)
 const midpoint = (p1: Point, p2: Point) => <Point>{ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
 const subtract = (p1: Point, p2: Point) => <Point>{ x: p1.x - p2.x, y: p1.y - p2.y }
 
-type Render = (ctx: CanvasRenderingContext2D) => void
+const MIN_VELOCITY = 0.02
+const TRACKED_DURATION = 120
+
+// return boolean indicates if rAF renders should be scheduled
+// (i.e. there may be some animation that has to play)
+type Render = (ctx: CanvasRenderingContext2D, t: number) => void | boolean
 
 export interface Options {
   width: number
@@ -18,11 +34,13 @@ export interface Options {
   render: Render
   padding?: number
   maxZoom?: number
+  friction?: number
 }
 
 export function panzoom(canvas: HTMLCanvasElement, options: Options) {
   const dpr = window.devicePixelRatio
   const ctx = canvas.getContext('2d')!
+  const rAF = requestAnimationFrame
 
   let minZoom: number
   let width: number
@@ -30,11 +48,20 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
   let render: Render
   let padding: number
   let maxZoom: number
+  let friction: number
   let view_width = canvas.width = canvas.clientWidth * dpr
   let view_height = canvas.height = canvas.clientHeight * dpr
+  let frame = 0
+  let velocity: Velocity = { vx: 0, vy: 0, ts: 0 }
+
+  // active pointer count and positions
+  const pointers = new Map<number, Point>()
+
+  // tracking for momentum
+  const tracked: TrackedPoint[] = []
 
   function initialize(options: Options) {
-    ({ width, height, render, padding, maxZoom } = { padding: 0, maxZoom: 16, ...options })
+    ({ width, height, render, padding, maxZoom, friction } = { padding: 0, maxZoom: 16, friction: 0.97, ...options })
 
     minZoom = Math.min(
       canvas.width / (width + (padding * dpr)),
@@ -47,7 +74,9 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     ctx.scale(minZoom, minZoom)
     ctx.translate(-width / 2, -height / 2)
 
-    rerender()
+    stopMovement()
+
+    scheduleRender()
   }
 
   initialize(options)
@@ -73,11 +102,63 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     const middle = toImageSpace({ x: canvas.width / 2, y: canvas.height / 2 })
     ctx.translate(middle.x - prev.x, middle.y - prev.y)
 
-    rerender()
+    // if not animating, we need to repaint
+    if (!frame) {
+      renderFrame(performance.now())
+    }
   })
 
-  // active pointer count and positions
-  const pointers = new Map<number, Point>()
+  // prune the tracked events based on age
+  function prune(t: number) {
+    while (tracked.length && t - tracked[0].t > TRACKED_DURATION) {
+      tracked.shift()
+    }
+  }
+
+  function track(point: Point) {
+    const t = performance.now()
+
+    prune(t)
+
+    tracked.push({ point, t })
+  }
+
+  function stopMovement() {
+    if (frame) {
+      cancelAnimationFrame(frame)
+      frame = 0
+    }
+
+    velocity.vx = 0
+    velocity.vy = 0
+    tracked.length = 0
+  }
+
+  // constrain image to viewport and "bounce" off trailing image edges
+  function checkBounds() {
+    const tl = toImageSpace({ x: 0, y: 0 })
+    const br = toImageSpace({ x: canvas.width, y: canvas.height })
+
+    if (tl.x > width) {
+      ctx.translate(tl.x - width, 0)
+      velocity.vx = -velocity.vx
+    }
+
+    if (tl.y > height) {
+      ctx.translate(0, tl.y - height)
+      velocity.vy = -velocity.vy
+    }
+
+    if (br.x < 0) {
+      ctx.translate(br.x, 0)
+      velocity.vx = -velocity.vx
+    }
+
+    if (br.y < 0) {
+      ctx.translate(0, br.y)
+      velocity.vy = -velocity.vy
+    }
+  }
 
   function onpointerdown(event: PointerEvent) {
     event.stopPropagation()
@@ -85,6 +166,8 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     const point = pointFromEvent(event)
     pointers.set(event.pointerId, point)
+
+    stopMovement()
   }
 
   function onpointerend(event: PointerEvent) {
@@ -92,7 +175,30 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     canvas.releasePointerCapture(event.pointerId)
 
     pointers.delete(event.pointerId)
-    // TODO: add momentum scrolling ...
+
+    // if last pointer, check for velocity
+    if (pointers.size === 0) {
+      prune(performance.now())
+
+      if (tracked.length > 1) {
+        // calc movement
+        const oldest = tracked[0]
+        const latest = tracked[tracked.length - 1]
+
+        // calc velocity
+        const x = latest.point.x - oldest.point.x
+        const y = latest.point.y - oldest.point.y
+        const t = latest.t - oldest.t
+
+        velocity = {
+          vx: x / t,
+          vy: y / t,
+          ts: performance.now()
+        }
+
+        scheduleRender()
+      }
+    }
   }
 
   function onpointermove(event: PointerEvent) {
@@ -106,11 +212,13 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     switch (pointers.size) {
       // single pointer move (pan)
       case 1: {
+        track(toImageSpace(point))
+
         const prev = pointers.get(event.pointerId)!
         const diff = subtract(toImageSpace(point), toImageSpace(prev))
 
         moveBy(diff)
-        rerender()
+        scheduleRender()
 
         pointers.set(event.pointerId, point)
 
@@ -157,6 +265,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
   function moveBy(delta: Point) {
     ctx.translate(delta.x, delta.y)
+    checkBounds()
   }
 
   function zoomOn(point: Point, zoom: number) {
@@ -180,7 +289,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       scale(maxZoom / transform.a)
     }
 
-    rerender()
+    scheduleRender()
   }
 
   function pointFromEvent(event: PointerEvent | WheelEvent): Point {
@@ -193,19 +302,46 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     return inverse.transformPoint(point)
   }
 
-  function rerender() {
+  function scheduleRender() {
+    if (!frame) {
+      frame = rAF(renderFrame)
+    }
+  }
+
+  function renderFrame(t: number) {
     ctx.save()
     ctx.resetTransform()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.restore()
 
-    render(ctx)
+    const playing = render(ctx, t)
+
+    const moving = Math.abs(velocity.vx) > MIN_VELOCITY || Math.abs(velocity.vy) > MIN_VELOCITY
+    if (moving) {
+      const ts = t - velocity.ts
+      const x = velocity.vx * ts
+      const y = velocity.vy * ts
+
+      moveBy({ x, y })
+
+      velocity.vx *= friction
+      velocity.vy *= friction
+      velocity.ts = t
+    }
+
+    if (moving || playing) {
+      frame = rAF(renderFrame)
+    } else {
+      frame = 0
+    }
   }
 
-  canvas.addEventListener('pointerdown', onpointerdown, { passive: true })
-  canvas.addEventListener('pointerup', onpointerend, { passive: true })
-  canvas.addEventListener('pointercancel', onpointerend, { passive: true })
-  canvas.addEventListener('pointermove', onpointermove, { passive: true })
+  const makePassive = { passive: true }
+
+  canvas.addEventListener('pointerdown', onpointerdown, makePassive)
+  canvas.addEventListener('pointerup', onpointerend, makePassive)
+  canvas.addEventListener('pointercancel', onpointerend, makePassive)
+  canvas.addEventListener('pointermove', onpointermove, makePassive)
   canvas.addEventListener('wheel', onwheel)
 
   return {
