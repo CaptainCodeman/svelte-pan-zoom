@@ -1,8 +1,12 @@
 # svelte-pan-zoom
 
-Canvas Pan and Zoom action for Svelte, 1Kb minified + gzipped
+![minified](https://img.shields.io/bundlephobia/min/svelte-pan-zoom/0.0.5?style=for-the-badge)
+![minified + zipped](https://img.shields.io/bundlephobia/minzip/svelte-pan-zoom/0.0.5?style=for-the-badge)
+
+Canvas Pan and Zoom action for Svelte
 
 [See Demo](https://captaincodeman.github.io/svelte-pan-zoom/)
+[Multiple Instances](https://captaincodeman.github.io/svelte-pan-zoom/multi)
 
 ## Usage
 
@@ -18,6 +22,11 @@ Options include:
 - `render` function to render to canvas (you don't _have_ to draw an image)
 - `padding` (optional, default 0)
 - `maxZoom` (optional, default 16)
+- `friction` how much momentum will be continues (optional, default to 0.97)
+
+NOTE: if you set friction to 1, any movement will never stop, so you'll have re-invented the DVD screen saver!
+
+Your render funcion will be passed the canvas 2d render context _and_ the animation timer. It can return true if you want to reschedule another animation frame to be rendered. This is useful if what you are rendering is also itself being animated.
 
 ## Example
 
@@ -36,7 +45,7 @@ Options include:
       })
     image.src = './svelte-kit-machine.png'
 
-    function render(ctx: CanvasRenderingContext2D) {
+    function render(ctx: CanvasRenderingContext2D, t: number) {
       ctx.drawImage(image, 0, 0)
     }
   })
