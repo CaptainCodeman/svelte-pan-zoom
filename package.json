@@ -1,6 +1,6 @@
 {
 	"name": "svelte-pan-zoom",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"type": "module",
 	"keywords": [
 		"svelte",
@@ -43,10 +43,12 @@
 		"@sveltejs/kit": "^1.2.6",
 		"svelte": "^3.55.1",
 		"svelte-check": "^3.0.3",
-		"svelte-resize-observer-action": "^0.0.2",
 		"tslib": "^2.4.1",
 		"tsup": "^6.5.0",
 		"typescript": "^4.9.4",
 		"vite": "^4.0.4"
+	},
+	"dependencies": {
+		"svelte-resize-observer-action": "^0.0.2"
 	}
 }
