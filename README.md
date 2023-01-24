@@ -1,7 +1,7 @@
 # svelte-pan-zoom
 
-![minified](https://img.shields.io/bundlephobia/min/svelte-pan-zoom/0.0.5?style=for-the-badge)
-![minified + zipped](https://img.shields.io/bundlephobia/minzip/svelte-pan-zoom/0.0.5?style=for-the-badge)
+![minified](https://img.shields.io/bundlephobia/min/svelte-pan-zoom/0.0.6?style=for-the-badge)
+![minified + zipped](https://img.shields.io/bundlephobia/minzip/svelte-pan-zoom/0.0.6?style=for-the-badge)
 
 Canvas Pan and Zoom action for Svelte
 
@@ -19,10 +19,10 @@ Import action into page, create options and pass to action.
 Options include:
 
 - `width` & `height` in CSS pixels of item to render (will be centered and sized to fit canvas)
-- `render` function to render to canvas (you don't _have_ to draw an image)
+- `render` function to render to canvas (you're not limited to rendering a single image)
 - `padding` (optional, default 0)
 - `maxZoom` (optional, default 16)
-- `friction` how much momentum will be continues (optional, default to 0.97)
+- `friction` how much momentum will be continued (optional, default to 0.97)
 
 NOTE: if you set friction to 1, any movement will never stop, so you'll have re-invented the DVD screen saver!
 
