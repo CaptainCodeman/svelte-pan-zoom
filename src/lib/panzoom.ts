@@ -1,6 +1,6 @@
 import { resize } from 'svelte-resize-observer-action'
 
-interface Point {
+export interface Point {
   x: number
   y: number
 }
@@ -26,7 +26,7 @@ const TRACKED_DURATION = 120
 
 // return boolean indicates if rAF renders should be scheduled
 // (i.e. there may be some animation that has to play)
-type Render = (ctx: CanvasRenderingContext2D, t: number) => void | boolean
+type Render = (ctx: CanvasRenderingContext2D, t: number, focus: Point) => void | boolean
 
 export interface Options {
   width: number
@@ -51,6 +51,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
   let friction: number
   let view_width = canvas.width = canvas.clientWidth * dpr
   let view_height = canvas.height = canvas.clientHeight * dpr
+  let focus: Point
   let frame = 0
   let velocity: Velocity = { vx: 0, vy: 0, ts: 0 }
 
@@ -76,6 +77,8 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     stopMovement()
 
+    focus = toImageSpace({ x: canvas.width / 2, y: canvas.height / 2 })
+
     scheduleRender()
   }
 
@@ -99,8 +102,9 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     ctx.setTransform(transform)
 
-    const middle = toImageSpace({ x: canvas.width / 2, y: canvas.height / 2 })
-    ctx.translate(middle.x - prev.x, middle.y - prev.y)
+    focus = toImageSpace({ x: view_width / 2, y: view_height / 2 })
+
+    ctx.translate(focus.x - prev.x, focus.y - prev.y)
 
     // if not animating, we need to repaint
     if (!frame) {
@@ -212,10 +216,13 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     switch (pointers.size) {
       // single pointer move (pan)
       case 1: {
-        track(toImageSpace(point))
+        const curr = toImageSpace(point)
+        track(curr)
 
         const prev = pointers.get(event.pointerId)!
-        const diff = subtract(toImageSpace(point), toImageSpace(prev))
+        const diff = subtract(curr, toImageSpace(prev))
+
+        focus = curr
 
         moveBy(diff)
         scheduleRender()
@@ -289,6 +296,8 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       scale(maxZoom / transform.a)
     }
 
+    focus = point
+
     scheduleRender()
   }
 
@@ -314,7 +323,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.restore()
 
-    const playing = render(ctx, t)
+    const playing = render(ctx, t, focus)
 
     const moving = Math.abs(velocity.vx) > MIN_VELOCITY || Math.abs(velocity.vy) > MIN_VELOCITY
     if (moving) {

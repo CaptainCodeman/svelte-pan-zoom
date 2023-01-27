@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { panzoom, type Options } from '$lib'
+	import { panzoom, type Options, type Point } from '$lib'
 
 	const promise = new Promise<Options>(resolve => {
 		const image = new Image()
@@ -12,7 +12,7 @@
 			})
 		image.src = './svelte-kit-machine.webp'
 
-		function render(ctx: CanvasRenderingContext2D) {
+		function render(ctx: CanvasRenderingContext2D, _t: number, _focus: Point) {
 			ctx.drawImage(image, 0, 0)
 		}
 	})

@@ -1,7 +1,7 @@
 # svelte-pan-zoom
 
-![minified](https://img.shields.io/bundlephobia/min/svelte-pan-zoom/0.0.6?style=for-the-badge)
-![minified + zipped](https://img.shields.io/bundlephobia/minzip/svelte-pan-zoom/0.0.6?style=for-the-badge)
+![minified](https://img.shields.io/bundlephobia/min/svelte-pan-zoom/0.0.8?style=for-the-badge)
+![minified + zipped](https://img.shields.io/bundlephobia/minzip/svelte-pan-zoom/0.0.8?style=for-the-badge)
 
 Canvas Pan and Zoom action for Svelte
 
@@ -26,7 +26,7 @@ Options include:
 
 NOTE: if you set friction to 1, any movement will never stop, so you'll have re-invented the DVD screen saver!
 
-Your render funcion will be passed the canvas 2d render context _and_ the animation timer. It can return true if you want to reschedule another animation frame to be rendered. This is useful if what you are rendering is also itself being animated.
+Your render function will be passed the canvas 2d render context _and_ the animation timer plus the "focus" point (the point last zoomed or interacted with). It can return true if you want to reschedule another animation frame to be rendered. This is useful if what you are rendering is also itself being animated.
 
 ## Example
 
