@@ -49,6 +49,7 @@
 		"vite": "^4.0.4"
 	},
 	"dependencies": {
+		"svelte-disable-preload": "^0.0.1",
 		"svelte-resize-observer-action": "^0.0.2"
 	}
 }

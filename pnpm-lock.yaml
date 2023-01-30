@@ -5,6 +5,7 @@ specifiers:
   '@sveltejs/kit': ^1.2.6
   svelte: ^3.55.1
   svelte-check: ^3.0.3
+  svelte-disable-preload: ^0.0.1
   svelte-resize-observer-action: ^0.0.2
   tslib: ^2.4.1
   tsup: ^6.5.0
@@ -12,6 +13,7 @@ specifiers:
   vite: ^4.0.4
 
 dependencies:
+  svelte-disable-preload: 0.0.1
   svelte-resize-observer-action: 0.0.2
 
 devDependencies:
@@ -1336,6 +1338,10 @@ packages:
       - stylus
       - sugarss
     dev: true
+
+  /svelte-disable-preload/0.0.1:
+    resolution: {integrity: sha512-Jhqgx056c0tWXZyavWGBFxhzIHGO82OJN5hPCgPY6/nBdrzv3/ZBXFH7T2DBgwNzNmGdc7T+hNc2t9CijZy6AQ==}
+    dev: false
 
   /svelte-hmr/0.15.1_svelte@3.55.1:
     resolution: {integrity: sha512-BiKB4RZ8YSwRKCNVdNxK/GfY+r4Kjgp9jCLEy0DuqAKfmQtpL38cQK3afdpjw4sqSs4PLi3jIPJIFp259NkZtA==}

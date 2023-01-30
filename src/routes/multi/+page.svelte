@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { panzoom, type Options } from '$lib'
+	import { disablePreload } from 'svelte-disable-preload'
 
 	const promise = new Promise<Options>(resolve => {
 		const image = new Image()
@@ -20,10 +21,10 @@
 
 <div>
 	{#await promise then options}
-		<canvas style:width="60%" style:background-color="#ccc" use:panzoom={options} />
-		<canvas style:width="40%" style:background-color="#ddd" use:panzoom={options} />
-		<canvas style:width="40%" style:background-color="#eee" use:panzoom={options} />
-		<canvas style:width="60%" style:background-color="#fff" use:panzoom={options} />
+		<canvas style:width="60%" style:background-color="#ccc" use:disablePreload use:panzoom={options} />
+		<canvas style:width="40%" style:background-color="#ddd" use:disablePreload use:panzoom={options} />
+		<canvas style:width="40%" style:background-color="#eee" use:disablePreload use:panzoom={options} />
+		<canvas style:width="60%" style:background-color="#fff" use:disablePreload use:panzoom={options} />
 	{/await}
 </div>
 
