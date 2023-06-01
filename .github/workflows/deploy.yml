@@ -47,13 +47,13 @@ jobs:
           BASE_PATH: '/${{ github.event.repository.name }}'
         run: |
           pnpm run build
-          touch docs/.nojekyll
+          touch build/.nojekyll
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v1
         with:
           # this should match the `pages` option in your adapter-static options
-          path: 'docs/'
+          path: 'build/'
 
   deploy:
     needs: build
