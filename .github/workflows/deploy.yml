@@ -1,4 +1,4 @@
-name: Github Pages Deploy
+name: Deploy to GitHub Pages
 
 on:
   # Trigger the workflow every time you push to the `main` branch
@@ -22,36 +22,52 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    # prevents this action from running on forks
-    if: github.repository == 'CaptainCodeman/svelte-pan-zoom'
-    name: Deploy
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout your repository using git
+      - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup PNPM
+
+      - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8.x.x
-      - name: Setup Node.js
+          version: 8
+
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: pnpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Build
-        run: pnpm build
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Upload artifact
+
+      - name: build
+        env:
+          BASE_PATH: '/${{ github.event.repository.name }}'
+        run: |
+          pnpm run build
+          touch docs/.nojekyll
+
+      - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v1
         with:
-          path: 'docs'
-      - name: Deploy to GitHub Pages
+          # this should match the `pages` option in your adapter-static options
+          path: 'docs/'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v1

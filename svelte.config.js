@@ -1,7 +1,7 @@
 import adapter from '@sveltejs/adapter-static'
 import { vitePreprocess } from '@sveltejs/kit/vite'
 
-const prod = process.env.NODE_ENV === 'production'
+const dev = process.argv.includes('dev')
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -16,7 +16,7 @@ const config = {
 			fallback: null,
 		}),
 		paths: {
-			base: prod ? '/svelte-pan-zoom' : '',
+			base: dev ? '' : process.env.BASE_PATH,
 		},
 	},
 }
