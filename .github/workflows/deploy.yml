@@ -22,11 +22,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     # prevents this action from running on forks
     if: github.repository == 'CaptainCodeman/svelte-pan-zoom'
-    name: Build
+    name: Deploy
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v3
@@ -43,14 +46,6 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build
         run: pnpm build
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact
