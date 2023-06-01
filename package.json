@@ -1,6 +1,6 @@
 {
 	"name": "svelte-pan-zoom",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"type": "module",
 	"keywords": [
 		"svelte",
@@ -16,8 +16,12 @@
 		"dist"
 	],
 	"exports": {
-		".": "./dist/index.js"
+		".": {
+			"types": "./dist/index.d.ts",
+			"svelte": "./dist/index.js"
+		}
 	},
+	"svelte": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"homepage": "https://captaincodeman.github.io/svelte-pan-zoom/",
@@ -34,20 +38,25 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"package": "tsup",
 		"preview": "vite preview",
+		"package": "tsup && publint",
+		"prepublishOnly": "npm run package",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
+	"peerDependencies": {
+		"svelte": "^3.54.0 || ^4.0.0"
+	},
 	"devDependencies": {
-		"@sveltejs/adapter-static": "^1.0.5",
-		"@sveltejs/kit": "^1.2.6",
-		"svelte": "^3.55.1",
-		"svelte-check": "^3.0.3",
-		"tslib": "^2.4.1",
-		"tsup": "^6.5.0",
-		"typescript": "^4.9.4",
-		"vite": "^4.0.4"
+		"@sveltejs/adapter-static": "^2.0.2",
+		"@sveltejs/kit": "^1.20.0",
+		"publint": "^0.1.12",
+		"svelte": "^4.0.0-next.0",
+		"svelte-check": "^3.4.3",
+		"tslib": "^2.5.2",
+		"tsup": "^6.7.0",
+		"typescript": "^5.0.4",
+		"vite": "^4.3.9"
 	},
 	"dependencies": {
 		"svelte-disable-preload": "^0.0.1",
