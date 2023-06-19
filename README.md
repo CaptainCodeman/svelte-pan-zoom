@@ -32,27 +32,17 @@ Your render function will be passed the canvas 2d render context _and_ the anima
 
 ```svelte
 <script lang="ts">
-  import { panzoom, type Options } from '$lib'
+  import { panzoom, type Options } from 'svelte-pan-zoom'
 
-  const promise = new Promise<Options>(resolve => {
-    const image = new Image()
+  export let image: CanvasImageSource
 
-    image.onload = () =>
-      resolve({
-        width: image.width,
-        height: image.height,
-        render,
-      })
-    image.src = './svelte-kit-machine.png'
-
-    function render(ctx: CanvasRenderingContext2D, t: number) {
-      ctx.drawImage(image, 0, 0)
-    }
-  })
+  function render(ctx: CanvasRenderingContext2D, t: number) {
+    ctx.drawImage(image, 0, 0)
+  }
 </script>
 
 {#await promise then options}
-  <canvas use:panzoom={options} />
+  <canvas use:panzoom={{ render, width: image.width, height: image.height }} />
 {/await}
 
 <style>
