@@ -325,7 +325,10 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
     const playing = render(ctx, t, focus)
 
-    const moving = Math.abs(velocity.vx) > MIN_VELOCITY || Math.abs(velocity.vy) > MIN_VELOCITY
+    const transform = ctx.getTransform()
+    const distance = Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy) * transform.a
+    const moving = distance > MIN_VELOCITY
+
     if (moving) {
       const ts = t - velocity.ts
       const x = velocity.vx * ts
