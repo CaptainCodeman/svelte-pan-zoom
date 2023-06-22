@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: ['src/lib/index.ts'],
-  external: ['svelte-resize-observer-action'],
+  external: ['svelte-disable-preload', 'svelte-resize-observer-action'],
   format: ['esm'],
   splitting: false,
   sourcemap: false,

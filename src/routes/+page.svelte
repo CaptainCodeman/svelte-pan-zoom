@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { panzoom, type Options, type Point } from '$lib'
-	import { disablePreload } from 'svelte-disable-preload'
 
 	const promise = new Promise<Options>(resolve => {
 		const image = new Image()
@@ -20,7 +19,7 @@
 </script>
 
 {#await promise then options}
-	<canvas use:disablePreload use:panzoom={options} />
+	<canvas use:panzoom={options} />
 {/await}
 
 <div>

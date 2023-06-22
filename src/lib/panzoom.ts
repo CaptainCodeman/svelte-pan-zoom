@@ -1,3 +1,4 @@
+import { disablePreload } from 'svelte-disable-preload'
 import { resize } from 'svelte-resize-observer-action'
 
 export interface Point {
@@ -84,6 +85,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
 
   initialize(options)
 
+  const preloadAction = disablePreload(canvas)
   const resizeAction = resize(canvas, entry => {
     const rect = entry.contentRect
     const prev = toImageSpace({ x: view_width / 2, y: view_height / 2 })
@@ -361,6 +363,7 @@ export function panzoom(canvas: HTMLCanvasElement, options: Options) {
       initialize(options)
     },
     destroy() {
+      preloadAction.destroy()
       resizeAction.destroy()
 
       canvas.removeEventListener('pointerdown', onpointerdown)
