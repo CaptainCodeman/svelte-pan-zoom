@@ -34,17 +34,27 @@ NOTE: [`svelte-disable-preload`](https://www.npmjs.com/package/svelte-disable-pr
 
 ```svelte
 <script lang="ts">
-  import { panzoom, type Options } from 'svelte-pan-zoom'
+import { panzoom, type Options, type Point } from '$lib'
 
-  export let image: CanvasImageSource
+	const promise = new Promise<Options>(resolve => {
+		const image = new Image()
 
-  function render(ctx: CanvasRenderingContext2D, t: number) {
-    ctx.drawImage(image, 0, 0)
-  }
+		image.onload = () =>
+			resolve({
+				width: image.width,
+				height: image.height,
+				render,
+			})
+		image.src = './svelte-kit-machine.webp'
+
+		function render(ctx: CanvasRenderingContext2D, _t: number, _focus: Point) {
+			ctx.drawImage(image, 0, 0)
+		}
+	})
 </script>
 
 {#await promise then options}
-  <canvas use:panzoom={{ render, width: image.width, height: image.height }} />
+	<canvas use:panzoom={options} />
 {/await}
 
 <style>
