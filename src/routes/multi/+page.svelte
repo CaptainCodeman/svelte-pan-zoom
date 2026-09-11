@@ -1,29 +1,24 @@
 <script lang="ts">
 	import { panzoom, type Options } from '$lib'
 
-	const promise = new Promise<Options>(resolve => {
+	const promise = new Promise<Options>((resolve) => {
 		const image = new Image()
-
 		image.onload = () =>
 			resolve({
 				width: image.width,
 				height: image.height,
-				render,
+				render: (ctx) => ctx.drawImage(image, 0, 0),
 			})
 		image.src = './svelte-kit-machine.webp'
-
-		function render(ctx: CanvasRenderingContext2D) {
-			ctx.drawImage(image, 0, 0)
-		}
 	})
 </script>
 
 <div>
 	{#await promise then options}
-		<canvas style:width="60%" style:background-color="#ccc" use:panzoom={options} />
-		<canvas style:width="40%" style:background-color="#ddd" use:panzoom={options} />
-		<canvas style:width="40%" style:background-color="#eee" use:panzoom={options} />
-		<canvas style:width="60%" style:background-color="#fff" use:panzoom={options} />
+		<canvas style:width="60%" style:background-color="#ccc" {@attach panzoom(options)}></canvas>
+		<canvas style:width="40%" style:background-color="#ddd" {@attach panzoom(options)}></canvas>
+		<canvas style:width="40%" style:background-color="#eee" {@attach panzoom(options)}></canvas>
+		<canvas style:width="60%" style:background-color="#fff" {@attach panzoom(options)}></canvas>
 	{/await}
 </div>
 

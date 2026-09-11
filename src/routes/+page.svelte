@@ -1,25 +1,22 @@
 <script lang="ts">
-	import { panzoom, type Options, type Point } from '$lib'
+	import { PanZoom } from '$lib'
 
-	const promise = new Promise<Options>(resolve => {
+	const viewer = new Promise<PanZoom>((resolve) => {
 		const image = new Image()
-
 		image.onload = () =>
-			resolve({
-				width: image.width,
-				height: image.height,
-				render,
-			})
+			resolve(
+				new PanZoom({
+					width: image.width,
+					height: image.height,
+					render: (ctx) => ctx.drawImage(image, 0, 0),
+				}),
+			)
 		image.src = './svelte-kit-machine.webp'
-
-		function render(ctx: CanvasRenderingContext2D, _t: number, _focus: Point) {
-			ctx.drawImage(image, 0, 0)
-		}
 	})
 </script>
 
-{#await promise then options}
-	<canvas use:panzoom={options} />
+{#await viewer then pz}
+	<canvas {@attach pz.attach}></canvas>
 {/await}
 
 <div>
