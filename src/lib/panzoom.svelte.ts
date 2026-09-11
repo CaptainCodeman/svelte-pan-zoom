@@ -209,6 +209,9 @@ export class PanZoom {
 	}
 
 	#onResize(entry: ResizeObserverEntry) {
+		const canvas = this.#canvas
+		if (!canvas || (canvas.clientWidth === 0 && canvas.clientHeight === 0)) return
+
 		const prev = this.#toContent({ x: this.#viewWidth / 2, y: this.#viewHeight / 2 })
 		this.#dpr = window.devicePixelRatio
 		this.#syncCanvasSize(entry.contentRect.width, entry.contentRect.height)
