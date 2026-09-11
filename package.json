@@ -30,7 +30,7 @@
 	"homepage": "https://captaincodeman.github.io/svelte-pan-zoom/",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/captaincodeman/svelte-pan-zoom.git"
+		"url": "git+https://github.com/captaincodeman/svelte-pan-zoom.git"
 	},
 	"author": {
 		"name": "Simon Green",
