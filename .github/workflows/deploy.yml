@@ -44,6 +44,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
+        env:
+          BASE_PATH: '/${{ github.event.repository.name }}'
         run: pnpm run build
 
       - name: Upload Artifacts
