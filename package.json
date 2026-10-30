@@ -54,7 +54,7 @@
 		"@sveltejs/adapter-static": "^4.0.0",
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/package": "^3.0.0",
-		"@sveltejs/vite-plugin-svelte": "^7.3.0",
+		"@types/node": "^26.6.5",
 		"publint": "^0.3.24",
 		"svelte": "^5.57.1",
 		"svelte-check": "^4.7.6",
