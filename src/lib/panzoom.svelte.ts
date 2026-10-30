@@ -1,4 +1,5 @@
 import { untrack } from 'svelte'
+import { on } from 'svelte/events'
 import type { Attachment } from 'svelte/attachments'
 
 export interface Point {
@@ -26,8 +27,8 @@ interface TrackedPoint {
 const MIN_VELOCITY = 0.02
 const TRACKED_DURATION = 120
 const FRAME_MS = 1000 / 60
-const PRELOAD_EVENTS = ['click', 'touchstart', 'mousedown', 'mousemove'] as const
-const PRELOAD_OPTS: AddEventListenerOptions = { capture: true }
+const PRELOAD_EVENTS = ['click', 'touchstart', 'mousedown'] as const
+const PRELOAD_OPTS: AddEventListenerOptions = { capture: true, passive: true }
 const PASSIVE: AddEventListenerOptions = { passive: true }
 
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y)
@@ -52,10 +53,10 @@ function observeResize(element: Element, callback: (entry: ResizeObserverEntry) 
 
 function disablePreload(node: HTMLElement) {
 	const stop = (event: Event) => event.stopPropagation()
-	for (const type of PRELOAD_EVENTS) node.addEventListener(type, stop, PRELOAD_OPTS)
-	node.setAttribute('data-sveltekit-preload-data', 'off')
+	const unlisten = PRELOAD_EVENTS.map((type) => on(node, type, stop, PRELOAD_OPTS))
+	node.setAttribute('data-sveltekit-preload-data', 'false')
 	return () => {
-		for (const type of PRELOAD_EVENTS) node.removeEventListener(type, stop, PRELOAD_OPTS)
+		for (const off of unlisten) off()
 		node.removeAttribute('data-sveltekit-preload-data')
 	}
 }
@@ -154,20 +155,35 @@ export class PanZoom {
 		const ctx = canvas.getContext('2d')
 		if (!ctx) return
 
-		this.#canvas = canvas
-		this.#ctx = ctx
-		this.#dpr = window.devicePixelRatio
-		this.#syncCanvasSize(canvas.clientWidth, canvas.clientHeight)
+		// {@attach} runs this in an effect. Size sync writes $state, so untrack
+		// the bind/unbind path or a resize re-adds the touchstart listener.
+		const teardown = untrack(() => {
+			this.#canvas = canvas
+			this.#ctx = ctx
+			this.#dpr = window.devicePixelRatio
+			this.#syncCanvasSize(canvas.clientWidth, canvas.clientHeight)
 
-		const restorePreload = disablePreload(canvas)
-		const unobserve = observeResize(canvas, (entry) => this.#onResize(entry))
+			const restorePreload = disablePreload(canvas)
+			const unobserve = observeResize(canvas, (entry) => this.#onResize(entry))
+			const unlisten = [
+				on(canvas, 'pointerdown', this.#onPointerDown, PASSIVE),
+				on(canvas, 'pointerup', this.#onPointerEnd, PASSIVE),
+				on(canvas, 'pointercancel', this.#onPointerEnd, PASSIVE),
+				on(canvas, 'lostpointercapture', this.#onPointerEnd, PASSIVE),
+				on(canvas, 'pointermove', this.#onPointerMove, PASSIVE),
+				on(canvas, 'wheel', this.#onWheel),
+			]
 
-		canvas.addEventListener('pointerdown', this.#onPointerDown, PASSIVE)
-		canvas.addEventListener('pointerup', this.#onPointerEnd, PASSIVE)
-		canvas.addEventListener('pointercancel', this.#onPointerEnd, PASSIVE)
-		canvas.addEventListener('lostpointercapture', this.#onPointerEnd, PASSIVE)
-		canvas.addEventListener('pointermove', this.#onPointerMove, PASSIVE)
-		canvas.addEventListener('wheel', this.#onWheel)
+			return () => {
+				this.#stopMovement()
+				restorePreload()
+				unobserve()
+				for (const off of unlisten) off()
+				this.#pointers.clear()
+				this.#canvas = undefined
+				this.#ctx = undefined
+			}
+		})
 
 		$effect(() => {
 			this.width
@@ -183,20 +199,7 @@ export class PanZoom {
 			this.#scheduleRender()
 		})
 
-		return () => {
-			this.#stopMovement()
-			restorePreload()
-			unobserve()
-			canvas.removeEventListener('pointerdown', this.#onPointerDown)
-			canvas.removeEventListener('pointerup', this.#onPointerEnd)
-			canvas.removeEventListener('pointercancel', this.#onPointerEnd)
-			canvas.removeEventListener('lostpointercapture', this.#onPointerEnd)
-			canvas.removeEventListener('pointermove', this.#onPointerMove)
-			canvas.removeEventListener('wheel', this.#onWheel)
-			this.#pointers.clear()
-			this.#canvas = undefined
-			this.#ctx = undefined
-		}
+		return teardown
 	}
 
 	#syncCanvasSize(cssWidth: number, cssHeight: number) {
