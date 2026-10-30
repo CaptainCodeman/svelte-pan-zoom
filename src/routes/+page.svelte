@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PanZoom } from '$lib'
+	import { PanZoom } from '#lib'
 
 	const viewer = new Promise<PanZoom>((resolve) => {
 		const image = new Image()

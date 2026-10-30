@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { panzoom, type Options } from '$lib'
+	import { panzoom, type Options } from '#lib'
 
 	const promise = new Promise<Options>((resolve) => {
 		const image = new Image()
